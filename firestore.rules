@@ -1,0 +1,12 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Permissive rules until June 9, 2026 (original expiry)
+    // All collections: users, votes, publicvotes
+    match /{document=**} {
+      allow read, write: if request.time < timestamp.date(2026, 6, 9);
+    }
+  }
+}
