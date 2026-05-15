@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "homepage": "https://yuradavis.github.io/eurovision-2026-scoreboard",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
