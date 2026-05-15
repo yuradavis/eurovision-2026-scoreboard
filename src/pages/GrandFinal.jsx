@@ -6,6 +6,7 @@ import GlowButton from '../components/ui/GlowButton'
 import CountryCardPlaceholder from '../components/ui/CountryCardPlaceholder'
 import { countries, autoFinalistsCountries, APP_CONFIG, VOTING_PHASES } from '../data/eurovision2026'
 import { finalists } from '../data/finalists'
+import { grandFinalRunningOrder } from '../data/grandFinalRunningOrder'
 import { useGrandFinalLeaderboard } from '../hooks/useGrandFinalLeaderboard'
 import { useVoting } from '../hooks/useVoting'
 import { useAuth } from '../context/AuthContext'
@@ -20,15 +21,20 @@ export default function GrandFinal() {
   const { currentUser, isAuthenticated } = useAuth()
   const { myVotes, castVote, saving, isReady } = useVoting(STAGE)
 
-  // Build Grand Final country list
-  const autoIds = new Set(autoFinalistsCountries.map(c => c.id))
-  const semiQualifiers = finalists
-    .map(id => countries.find(c => c.id === id))
-    .filter(Boolean)
-    .filter(c => !autoIds.has(c.id))
+  // Build Grand Final country list in official running order
+  const finalistSet = new Set(finalists)
+  const orderedByRunningOrder = grandFinalRunningOrder.length > 0
+    // If running order is filled — use it as the authoritative order
+    ? grandFinalRunningOrder
+        .map(id => countries.find(c => c.id === id))
+        .filter(Boolean)
+    // Fallback: finalists order (before running order is announced)
+    : finalists
+        .map(id => countries.find(c => c.id === id))
+        .filter(Boolean)
 
-  const grandFinalCountries = semiQualifiers.length > 0
-    ? [...autoFinalistsCountries, ...semiQualifiers]
+  const grandFinalCountries = orderedByRunningOrder.length > 0
+    ? orderedByRunningOrder
     : countries.filter(Boolean)
 
   const { leaderboard, publicLoading } = useGrandFinalLeaderboard(grandFinalCountries)
@@ -333,36 +339,23 @@ export default function GrandFinal() {
 
       {/* ── RUNNING ORDER TAB ─────────────────────────────────── */}
       {activeTab === 'Running Order' && (() => {
-        const finalistCountriesDisplay = finalists
-          .map(id => countries.find(c => c.id === id))
-          .filter(Boolean)
-        const qualifiedCount = finalistCountriesDisplay.length
+        const orderedCountries = grandFinalRunningOrder.length > 0
+          ? grandFinalRunningOrder
+              .map(id => countries.find(c => c.id === id))
+              .filter(Boolean)
+          : finalists
+              .map(id => countries.find(c => c.id === id))
+              .filter(Boolean)
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <SectionCard title="Running Order" badge="Grand Final" accent="purple" subtitle="Порядок виступів у Grand Final">
-              <p className="text-white/35 text-xs mt-2 font-body">
-                Повний Running Order буде оголошено після обох Semi Finals.
-              </p>
+            <SectionCard title="Running Order" badge="Grand Final" accent="purple" subtitle="Офіційний порядок виступів Grand Final">
               <div className="space-y-2 mt-4">
-                <p className="text-xs font-mono text-white/20 uppercase tracking-widest mb-3">Big 4 + Host (підтверджені)</p>
-                {autoFinalistsCountries.map(c => (
-                  <CountryCardPlaceholder key={c.id} {...c} variant="compact" />
-                ))}
-                {finalistCountriesDisplay.filter(c => c.semi !== null).length > 0 && (
-                  <>
-                    <p className="text-xs font-mono text-white/20 uppercase tracking-widest mb-3 mt-4">
-                      Кваліфіковані ({finalistCountriesDisplay.filter(c => c.semi !== null).length}/20)
-                    </p>
-                    {finalistCountriesDisplay.filter(c => c.semi !== null).map(c => (
-                      <CountryCardPlaceholder key={c.id} {...c} variant="compact" />
-                    ))}
-                  </>
-                )}
-                {qualifiedCount < 25 && (
-                  <div className="mt-4 p-3 bg-white/[0.02] rounded-xl border border-dashed border-white/[0.08] text-center">
-                    <p className="text-white/20 text-xs font-mono">+ {25 - qualifiedCount} країн після Semi Finals</p>
+                {orderedCountries.map((c, i) => (
+                  <div key={c.id} className="flex items-center gap-3 py-1.5">
+                    <span className="font-mono text-xs text-white/20 w-6 text-right shrink-0">{i + 1}</span>
+                    <CountryCardPlaceholder {...c} variant="compact" />
                   </div>
-                )}
+                ))}
               </div>
             </SectionCard>
 
